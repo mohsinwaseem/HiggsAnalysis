@@ -15,7 +15,7 @@ from HiggsAnalysis.MiniAOD2TTree.tools.HChOptions import getOptionsDataVersion
 maxEvents    = 1000
 maxWarnings  = 100
 reportEvery  = 100
-testWithData = True
+testWithData = False#True
 if testWithData:
     dataVersion  = "80Xdata"
     datasetFiles = [

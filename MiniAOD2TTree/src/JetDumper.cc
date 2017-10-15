@@ -32,6 +32,7 @@ JetDumper::JetDumper(edm::ConsumesCollector&& iConsumesCollector, std::vector<ed
     nUserints   = inputCollections[0].getParameter<std::vector<std::string> >("userInts").size();
     userints    = new std::vector<int>[inputCollections.size()*nUserints];
     jetToken   = new edm::EDGetTokenT<edm::View<pat::Jet> >[inputCollections.size()];
+    rhoToken   = new edm::EDGetTokenT<double>[inputCollections.size()];// ATHER
     jetJESup   = new edm::EDGetTokenT<edm::View<pat::Jet> >[inputCollections.size()];
     jetJESdown = new edm::EDGetTokenT<edm::View<pat::Jet> >[inputCollections.size()];
     jetJERup   = new edm::EDGetTokenT<edm::View<pat::Jet> >[inputCollections.size()];
@@ -40,6 +41,10 @@ JetDumper::JetDumper(edm::ConsumesCollector&& iConsumesCollector, std::vector<ed
         edm::InputTag inputtag = inputCollections[i].getParameter<edm::InputTag>("src");
         jetToken[i] = iConsumesCollector.consumes<edm::View<pat::Jet>>(inputtag);
 
+	edm::InputTag rhoSrc = inputCollections[i].getParameter<edm::InputTag>("rhosrc");
+        rhoToken[i] = iConsumesCollector.consumes<double>(rhoSrc); //ATHER
+
+	/*
 	if(systVariations){
 	  edm::InputTag inputtagJESup = inputCollections[i].getParameter<edm::InputTag>("srcJESup");
           jetJESup[i]   = iConsumesCollector.consumes<edm::View<pat::Jet>>(inputtagJESup);
@@ -53,6 +58,8 @@ JetDumper::JetDumper(edm::ConsumesCollector&& iConsumesCollector, std::vector<ed
           edm::InputTag inputtagJERdown = inputCollections[i].getParameter<edm::InputTag>("srcJERdown");
           jetJERdown[i] = iConsumesCollector.consumes<edm::View<pat::Jet>>(inputtagJERdown);
 	}
+	*/
+
     }
     
     useFilter = false;
@@ -82,6 +89,7 @@ JetDumper::JetDumper(edm::ConsumesCollector&& iConsumesCollector, std::vector<ed
       systJERup = new FourVectorDumper[inputCollections.size()];
       systJERdown = new FourVectorDumper[inputCollections.size()];
     }
+    
 }
 
 JetDumper::~JetDumper(){}
@@ -171,6 +179,7 @@ bool JetDumper::fill(edm::Event& iEvent, const edm::EventSetup& iSetup){
       }
     }
 */
+    //std::cout<<"\n\n__________________________Evt Sep___________________________\n"<<std::endl;
     edm::Handle <reco::GenParticleCollection> genParticlesHandle;
     if (!iEvent.isRealData())
       iEvent.getByToken(genParticleToken, genParticlesHandle);
@@ -180,14 +189,41 @@ bool JetDumper::fill(edm::Event& iEvent, const edm::EventSetup& iSetup){
 	std::vector<std::string> userfloatNames = inputCollections[ic].getParameter<std::vector<std::string> >("userFloats");
 	std::vector<std::string> userintNames = inputCollections[ic].getParameter<std::vector<std::string> >("userInts");
 	
+	edm::Handle<double> rhoHandle;
+	iEvent.getByToken(rhoToken[ic], rhoHandle);
+	float rho = *(rhoHandle.product());
+	
         edm::Handle<edm::View<pat::Jet>> jetHandle;
         iEvent.getByToken(jetToken[ic], jetHandle);
 
+	std::string jetType = inputCollections[ic].getUntrackedParameter<std::string>("branchname","");
+	//JEC
+	edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
+	if(jetType.compare("Jets")){
+	  iSetup.get<JetCorrectionsRecord>().get("AK4PFchs",JetCorParColl);
+	}
+	else if (jetType.compare("JetsPuppi")){
+	  iSetup.get<JetCorrectionsRecord>().get("AK4PFPuppi",JetCorParColl);
+	}
+	
+	//JER
+	if(jetType.compare("Jets")){
+	  resolution_pt  = JME::JetResolution("../data/JERFiles/Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt"); 
+	  resolution_phi = JME::JetResolution("../data/JERFiles/Spring16_25nsV10_MC_PhiResolution_AK4PFchs.txt");
+	  resolution_sf  = JME::JetResolutionScaleFactor("../data/JERFiles/Spring16_25nsV10_MC_SF_AK4PFchs.txt");
+	}
+	else if (jetType.compare("JetsPuppi")){
+	  resolution_pt  = JME::JetResolution("../data/JERFiles/Spring16_25nsV10_MC_PtResolution_AK4PFPuppi.txt");
+	  resolution_phi = JME::JetResolution("../data/JERFiles/Spring16_25nsV10_MC_PhiResolution_AK4PFPuppi.txt");
+	  resolution_sf  = JME::JetResolutionScaleFactor("../data/JERFiles/Spring16_25nsV10_MC_SF_AK4PFPuppi.txt");
+	}
+
+	
 	if(jetHandle.isValid()){
 
 	    for(size_t i=0; i<jetHandle->size(); ++i) {
     		const pat::Jet& obj = jetHandle->at(i);
-
+		//std::cout<<"\n\n\n";
 		pt[ic].push_back(obj.p4().pt());
                 eta[ic].push_back(obj.p4().eta());
                 phi[ic].push_back(obj.p4().phi());
@@ -285,15 +321,96 @@ bool JetDumper::fill(edm::Event& iEvent, const edm::EventSetup& iSetup){
                 // GenJet
                 if (obj.genJet() != nullptr) {
                   MCjet[ic].add(obj.genJet()->pt(), obj.genJet()->eta(), obj.genJet()->phi(), obj.genJet()->energy());
-                } else {
+                } 
+		else {
                   MCjet[ic].add(0.0, 0.0, 0.0, 0.0);
                 }
                 
                 // Systematics
-                if (systVariations && !iEvent.isRealData()) {
+		if (systVariations && !iEvent.isRealData()) { 
+		//-----------
+		//JEC
+		// Details at : https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections
+		//-----------
+		JetCorrectorParameters const & JetCorPar = (*JetCorParColl)["Uncertainty"];
+		JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(JetCorPar);
+		jecUnc->setJetPt(obj.p4().pt()); // here you must use the CORRECTED jet pt                                                                                                                                                
+		jecUnc->setJetEta(obj.p4().eta());
+		jecUnc->setJetPhi(obj.p4().phi());
+		jecUnc->setJetE(obj.p4().energy());
+
+		float unc = jecUnc->getUncertainty(true);
+		float pt_JESup = obj.p4().pt() * (1 + unc);
+		float pt_JESdn = obj.p4().pt() * (1 - unc);
+		float e_JESup = obj.p4().energy() * (1 + unc);
+		float e_JESdn = obj.p4().energy() * (1 - unc);
+		float eta = obj.p4().eta();
+		float phi = obj.p4().phi();
+		
+		systJESup[ic].add(pt_JESup,
+				  eta,
+				  phi,
+				  e_JESup);
+		
+		systJESdown[ic].add(pt_JESdn,
+				    eta,
+				    phi,
+				    e_JESdn);
+		
+		//-----------
+		//JER
+		//Getting Jet Resolution: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyResolution
+		//-----------
+		// JetReso                                                                                                                                                                                                              
+		// https://github.com/cmkuo/ggAnalysis/blob/master/ggNtuplizer/plugins/ggNtuplizer_jets.cc
+		JME::JetParameters parameters;
+		parameters.setJetPt(obj.p4().pt()).setJetEta(obj.p4().eta()).setRho(rho);
+		float jetResolution = resolution_pt.getResolution(parameters);
+		
+		float rnd = CLHEP::RandGauss::shoot(0., jetResolution);
+		
+		//float sf      = resolution_sf.getScaleFactor(parameters);
+		float sf_up   = resolution_sf.getScaleFactor(parameters, Variation::UP);
+		float sf_down = resolution_sf.getScaleFactor(parameters, Variation::DOWN);
+		
+		//float JER_Fac   = -1.;
+		float JERup_Fac = -1.;
+		float JERdn_Fac = -1.;
+		
+		if (obj.genJet() != nullptr) { 
+		  float jetGenJetPt = obj.genJet()->pt();
+		  //JER_Fac   = 1. + (sf   - 1.)*(obj.p4().pt() - jetGenJetPt)/obj.p4().pt();
+		  JERup_Fac = 1. + (sf_up - 1.)*(obj.p4().pt() - jetGenJetPt)/obj.p4().pt();
+		  JERdn_Fac = 1. + (sf_down - 1.)*(obj.p4().pt() - jetGenJetPt)/obj.p4().pt();
+		  
+		}
+		else {
+		  //JER_Fac   = 1. + rnd*sqrt(std::max(pow(sf,   2)-1, 0.));
+		  JERup_Fac = 1. + rnd*sqrt(std::max(pow(sf_up, 2)-1, 0.));
+		  JERdn_Fac = 1. + rnd*sqrt(std::max(pow(sf_down, 2)-1, 0.));
+		  
+		}
+		
+		float pt_JERup = obj.p4().pt() * JERup_Fac;
+		float pt_JERdn = obj.p4().pt() * JERdn_Fac;
+		float e_JERup  = obj.p4().energy() * JERup_Fac;
+		float e_JERdn  = obj.p4().energy() * JERdn_Fac;
+		
+		systJERup[ic].add(pt_JERup,
+				  eta,
+				  phi,
+				  e_JERup);
+		
+		systJERdown[ic].add(pt_JERdn,
+				    eta,
+				    phi,
+				    e_JERdn);
+		
+		/*
+		  if (systVariations && !iEvent.isRealData()) {
 	          edm::Handle<edm::View<pat::Jet>> jetJESupHandle;
         	  iEvent.getByToken(jetJESup[ic], jetJESupHandle);
-
+		  
                   if(jetJESupHandle.isValid()){
                     const pat::Jet& sysobj = jetJESupHandle->at(i);
                     systJESup[ic].add(sysobj.p4().pt(),
@@ -334,6 +451,7 @@ bool JetDumper::fill(edm::Event& iEvent, const edm::EventSetup& iSetup){
                                         sysobj.p4().phi(),
                                         sysobj.p4().energy());
                   }
+		*/
 /*
                   // JES
                   double uncUp = 0.0;
@@ -359,7 +477,7 @@ bool JetDumper::fill(edm::Event& iEvent, const edm::EventSetup& iSetup){
                                       obj.p4().energy()*(1.0-uncDown));
                   // JER
 */                
-                }
+		}
             }
         }
     }

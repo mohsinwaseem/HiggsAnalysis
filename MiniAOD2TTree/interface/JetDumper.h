@@ -20,7 +20,13 @@
 #include "HiggsAnalysis/MiniAOD2TTree/interface/FourVectorDumper.h"
 
 #include "DataFormats/PatCandidates/interface/Jet.h"
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
+#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 
+#include "JetMETCorrections/Objects/interface/JetCorrector.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
+#include "CLHEP/Random/RandGauss.h"
 
 class JetDumper : public BaseDumper {
     public:
@@ -38,12 +44,14 @@ class JetDumper : public BaseDumper {
     private:
 	edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken;
         edm::EDGetTokenT<edm::View<pat::Jet>> *jetToken;
-
+	edm::EDGetTokenT<double> *rhoToken; // ATHER
+	
         edm::EDGetTokenT<edm::View<pat::Jet>> *jetJESup;
         edm::EDGetTokenT<edm::View<pat::Jet>> *jetJESdown;
         edm::EDGetTokenT<edm::View<pat::Jet>> *jetJERup;
         edm::EDGetTokenT<edm::View<pat::Jet>> *jetJERdown;
 
+	
         std::vector<float> *discriminators;
         std::vector<double> *userfloats;
 	int nUserfloats;
@@ -71,7 +79,11 @@ class JetDumper : public BaseDumper {
         
         // 4-vector for generator jet
         FourVectorDumper *MCjet;
-        
+
+	JME::JetResolution resolution_pt;
+	JME::JetResolution resolution_phi;
+	JME::JetResolutionScaleFactor resolution_sf;
+	
         // Systematics variations for tau 4-vector
 	bool systVariations;
         FourVectorDumper *systJESup;

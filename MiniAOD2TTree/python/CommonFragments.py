@@ -50,16 +50,27 @@ def produceJets(process, isData):
         JEC += ['L2L3Residual']
 
     from JMEAnalysis.JetToolbox.jetToolbox_cff import jetToolbox
-    jetToolbox( process, 'ak4', 'ak4JetSubs', 'out', 
+    jetToolbox( process, 'ak4', 'ak4JetSubs', 'out',  PUMethod='CHS', #updateCollection='slimmedJets',
                 addQGTagger=True, addPUJetID=True, JETCorrLevels = JEC,
                 bTagDiscriminators = ['pfCombinedInclusiveSecondaryVertexV2BJetTags', 'pfCombinedMVAV2BJetTags','pfCombinedCvsBJetTags','pfCombinedCvsLJetTags'],
                 postFix='')
+    jetToolbox( process, 'ak4', 'jetSequence', 'out', updateCollection='slimmedJets', JETCorrPayload="AK4PFchs", addPUJetID=True, miniAOD=True )
+    jetToolbox( process, 'ak4', 'jetSequence', 'out', updateCollection='slimmedJetsPuppi', JETCorrPayload="AK4PFPuppi", addPUJetID=True, miniAOD=True )
 
+    #    jetToolbox( process, 'ak4', 'ak4JetSubs', 'out', PUMethod='Puppi',
+    #                addQGTagger=False, addPUJetID=True, JETCorrLevels = JEC,
+    #                bTagDiscriminators = ['pfCombinedInclusiveSecondaryVertexV2BJetTags', 'pfCombinedMVAV2BJetTags','pfCombinedCvsBJetTags','pfCombinedCvsLJetTags'],
+    #                postFix='')
+    
     # Small fix required to add the variables ptD, axis2, mult. See:
     # https://hypernews.cern.ch/HyperNews/CMS/get/jet-algorithms/418/1.html
-    getattr( process, 'patJetsAK4PFCHS').userData.userFloats.src += ['QGTagger'+'AK4PFCHS'+':ptD']
-    getattr( process, 'patJetsAK4PFCHS').userData.userFloats.src += ['QGTagger'+'AK4PFCHS'+':axis2']
-    getattr( process, 'patJetsAK4PFCHS').userData.userInts.src   += ['QGTagger'+'AK4PFCHS'+':mult']
+#    getattr( process, 'patJetsAK4PFCHS').userData.userFloats.src += ['QGTagger'+'AK4PFCHS'+':ptD']
+#    getattr( process, 'patJetsAK4PFCHS').userData.userFloats.src += ['QGTagger'+'AK4PFCHS'+':axis2']
+#    getattr( process, 'patJetsAK4PFCHS').userData.userInts.src   += ['QGTagger'+'AK4PFCHS'+':mult']
+    
+#    getattr( process, 'patJetsAK4PFPuppi').userData.userFloats.src += ['QGTagger'+'AK4PFPuppi'+':ptD']
+#    getattr( process, 'patJetsAK4PFPuppi').userData.userFloats.src += ['QGTagger'+'AK4PFPuppi'+':axis2']
+#    getattr( process, 'patJetsAK4PFPuppi').userData.userInts.src   += ['QGTagger'+'AK4PFPuppi'+':mult']
     return
 
 

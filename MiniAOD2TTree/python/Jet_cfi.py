@@ -15,16 +15,17 @@ import FWCore.ParameterSet.Config as cms
 Jets = cms.VPSet(
     cms.PSet(
         branchname = cms.untracked.string("Jets"),
-#        src = cms.InputTag("patJetsReapplyJECAK4CHS"), # made from ak4PFJetsCHS
+#        src = cms.InputTag("patJetsReapplyJECAK4CHS"), # made from ak4PFJetsCHS   
         src = cms.InputTag("selectedPatJetsAK4PFCHS"),#updatedPatJetsUpdatedJEC"),
 #        src = cms.InputTag("selectedPatJetsForMetT1T2SmearCorr"),
 #        src = cms.InputTag("cleanedPatJets"),
 #        src = cms.InputTag("patJetsReapplyJEC"),
-	systVariations = cms.bool(False),
-        srcJESup   = cms.InputTag("shiftedPatJetEnUp"),
-	srcJESdown = cms.InputTag("shiftedPatJetEnDown"),
-        srcJERup   = cms.InputTag("shiftedPatSmearedJetResUp"),
-        srcJERdown = cms.InputTag("shiftedPatSmearedJetResDown"),
+	systVariations = cms.bool(True),
+        rhosrc      = cms.InputTag("fixedGridRhoFastjetAll"),
+#        srcJESup   = cms.InputTag("shiftedPatJetEnUp"),
+#	srcJESdown = cms.InputTag("shiftedPatJetEnDown"),
+#        srcJERup   = cms.InputTag("shiftedPatSmearedJetResUp"),
+#        srcJERdown = cms.InputTag("shiftedPatSmearedJetResDown"),
 #        jecPayload = JECpayloadAK4PFchs.payload,
 
         discriminators = cms.vstring( #https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80X
@@ -34,35 +35,46 @@ Jets = cms.VPSet(
             "pfCombinedCvsBJetTags"
         ),
         userFloats = cms.vstring(
-#            "pileupJetId:fullDiscriminant",
-            "AK4PFCHSpileupJetIdEvaluator:fullDiscriminant",
-            "QGTaggerAK4PFCHS:qgLikelihood",
-            "QGTaggerAK4PFCHS:ptD",
-            "QGTaggerAK4PFCHS:axis2",
+##            "pileupJetId:fullDiscriminant",
+#            "AK4PFCHSpileupJetIdEvaluator:fullDiscriminant",
+#            "QGTaggerAK4PFCHS:qgLikelihood",
+#            "QGTaggerAK4PFCHS:ptD",
+#            "QGTaggerAK4PFCHS:axis2",
         ),       
         userInts = cms.vstring(
-            "QGTaggerAK4PFCHS:mult",
+#            "QGTaggerAK4PFCHS:mult",
         ),
     ),
-#    cms.PSet(
-#        branchname = cms.untracked.string("JetsPuppi"),
-##        src = cms.InputTag("patJetsReapplyJECPuppi"), # made from ak4PFJets
-#        src        = cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
-#        srcJESup   = cms.InputTag("shiftedPatJetEnUp"),
-#        srcJESdown = cms.InputTag("shiftedPatJetEnDown"),
-#        srcJERup   = cms.InputTag("shiftedPatJetResUp"),
-#        srcJERdown = cms.InputTag("shiftedPatJetResDown"),
-##        jecPayload = JECpayloadAK4PFPuppi.payload,
-#        discriminators = cms.vstring(
-#            "pfCombinedInclusiveSecondaryVertexV2BJetTags",
-#            "pfCombinedMVAV2BJetTags", 
-#            "pfCombinedCvsLJetTags", 
-#            "pfCombinedCvsBJetTags"
-#         ),
-#        userFloats = cms.vstring(
-##           "pileupJetId:fullDiscriminant"
-#        ),
-#    )
+    cms.PSet(
+        branchname = cms.untracked.string("JetsPuppi"),
+###        src = cms.InputTag("patJetsReapplyJECPuppi"), # made from ak4PFJets
+        src        = cms.InputTag("selectedPatJetsAK4PFPuppi"),
+        systVariations = cms.bool(True),
+        rhosrc      = cms.InputTag("fixedGridRhoFastjetAll"),
+##        srcJESup   = cms.InputTag("shiftedPatJetEnUp"),
+##        srcJESdown = cms.InputTag("shiftedPatJetEnDown"),
+##        srcJERup   = cms.InputTag("shiftedPatJetResUp"),
+##        srcJERdown = cms.InputTag("shiftedPatJetResDown"),
+###        jecPayload = JECpayloadAK4PFPuppi.payload,
+        discriminators = cms.vstring(
+            "pfCombinedInclusiveSecondaryVertexV2BJetTags",
+            "pfCombinedMVAV2BJetTags", 
+            "pfCombinedCvsLJetTags", 
+            "pfCombinedCvsBJetTags"
+         ),
+        userFloats = cms.vstring(
+            ###           "pileupJetId:fullDiscriminant"
+            #"AK4PFPuppipileupJetIdEvaluator:fullDiscriminant",
+            ##"QGTaggerAK4PFPuppi:qgLikelihood",
+            ##"QGTaggerAK4PFPuppi:ptD",
+            ##"QGTaggerAK4PFPuppi:axis2",
+        ),
+        userInts = cms.vstring(
+            ##"QGTaggerAK4PFCHS:mult",
+            #"AK4PFPuppipileupJetIdEvaluator:cutbasedId", 
+            #"AK4PFPuppipileupJetIdEvaluator:fullId" 
+            ),
+    )
 )
 
 
